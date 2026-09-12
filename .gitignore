@@ -1,1 +1,9 @@
-todo.md
+*.pyc
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+build/
+dist/
+wheelhouse/
+*.egg-info/
