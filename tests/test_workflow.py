@@ -50,3 +50,12 @@ def test_linux_libcxx_bootstrap_is_pinned_for_both_architectures():
     assert script.count("md5sum -c -") == 2
     assert "curl -fL --retry 3" in script
     assert "dnf install" not in script
+
+
+def test_old_glibc_has_filament_c23_scanf_compatibility():
+    cmake = Path("CMakeLists.txt").read_text(encoding="utf-8")
+    compatibility = Path("cpp/glibc_compat.cpp").read_text(encoding="utf-8")
+    assert "cpp/glibc_compat.cpp" in cmake
+    assert "!__GLIBC_PREREQ(2, 38)" in compatibility
+    assert "__isoc23_sscanf" in compatibility
+    assert "std::vsscanf" in compatibility

@@ -79,7 +79,7 @@ endif()
 get_filename_component(_filament_libdir "${_filament_core_library}" DIRECTORY)
 message(STATUS "Using Filament libraries from: ${_filament_libdir}")
 
-pybind11_add_module(_native MODULE cpp/bindings.cpp)
+pybind11_add_module(_native MODULE cpp/bindings.cpp cpp/glibc_compat.cpp)
 target_compile_features(_native PRIVATE cxx_std_20)
 target_compile_definitions(_native PRIVATE PYTHON_FILAMENT_VERSION="${PROJECT_VERSION}")
 target_include_directories(_native PRIVATE "${FILAMENT_ROOT}/include")
