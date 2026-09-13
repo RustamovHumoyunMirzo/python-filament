@@ -15,6 +15,7 @@ def test_workflow_uses_supported_runners_and_node24_actions():
     assert "softprops/action-gh-release@v3" in workflow
     assert "manylinux-install-clang" not in workflow
     assert "CIBW_BEFORE_ALL_LINUX: sh ci/install_linux_libcxx.sh" in workflow
+    assert "dnf install" not in workflow
     assert "LDFLAGS=-L/opt/python-filament-libcxx/lib" in workflow
     assert "LD_LIBRARY_PATH=/opt/python-filament-libcxx/lib" in workflow
     assert "CIBW_REPAIR_WHEEL_COMMAND_LINUX:" in workflow
@@ -48,3 +49,4 @@ def test_linux_libcxx_bootstrap_is_pinned_for_both_architectures():
     assert "subdir=linux-aarch64" in script
     assert script.count("md5sum -c -") == 2
     assert "curl -fL --retry 3" in script
+    assert "dnf install" not in script

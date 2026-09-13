@@ -77,7 +77,7 @@ jobs:
           CIBW_BUILD: ${{ matrix.build }}
           CIBW_BUILD_FRONTEND: build
           CIBW_ENVIRONMENT: FILAMENT_ARCHIVE=filament-sdk.tgz
-          CIBW_ENVIRONMENT_LINUX: FILAMENT_ARCHIVE=filament-sdk.tgz CC=clang CXX=clang++ LDFLAGS=-L/opt/python-filament-libcxx/lib LD_LIBRARY_PATH=/opt/python-filament-libcxx/lib
+          CIBW_ENVIRONMENT_LINUX: FILAMENT_ARCHIVE=filament-sdk.tgz LDFLAGS=-L/opt/python-filament-libcxx/lib LD_LIBRARY_PATH=/opt/python-filament-libcxx/lib
           CIBW_ENVIRONMENT_MACOS: FILAMENT_ARCHIVE=filament-sdk.tgz CMAKE_ARGS=-DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
           CIBW_BEFORE_ALL_LINUX: sh ci/install_linux_libcxx.sh
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: LD_LIBRARY_PATH=/opt/python-filament-libcxx/lib auditwheel repair -w {dest_dir} {wheel}

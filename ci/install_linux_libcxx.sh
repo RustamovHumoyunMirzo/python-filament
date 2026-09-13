@@ -22,7 +22,6 @@ case "$(uname -m)" in
     ;;
 esac
 
-dnf install -y clang
 install_dir=/opt/python-filament-libcxx
 download_dir=/tmp/python-filament-libcxx
 mkdir -p "$install_dir" "$download_dir"
