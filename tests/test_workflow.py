@@ -56,6 +56,7 @@ def test_old_glibc_has_filament_c23_scanf_compatibility():
     cmake = Path("CMakeLists.txt").read_text(encoding="utf-8")
     compatibility = Path("cpp/glibc_compat.cpp").read_text(encoding="utf-8")
     assert "cpp/glibc_compat.cpp" in cmake
-    assert "!__GLIBC_PREREQ(2, 38)" in compatibility
+    assert "__GLIBC_MINOR__ < 38" in compatibility
+    assert "__GLIBC_PREREQ" not in compatibility
     assert "__isoc23_sscanf" in compatibility
     assert "std::vsscanf" in compatibility

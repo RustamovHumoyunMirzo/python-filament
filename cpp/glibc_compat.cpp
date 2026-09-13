@@ -1,7 +1,7 @@
 #if defined(__linux__)
 #include <features.h>
 
-#if defined(__GLIBC__) && !__GLIBC_PREREQ(2, 38)
+#if defined(__GLIBC__) && (__GLIBC__ < 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ < 38))
 #include <cstdarg>
 #include <cstdio>
 
