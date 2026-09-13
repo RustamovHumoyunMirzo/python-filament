@@ -10,6 +10,14 @@ directory, which makes the same value portable across Windows, Linux containers,
 FILAMENT_ARCHIVE=filament-sdk.tgz pip wheel . -w dist
 ```
 
+The build recognizes both official SDK archive layouts: `include/` and `lib/`
+at the archive root, or those directories beneath the top-level `filament/`
+directory used by the macOS SDK.
+
+Each macOS wheel must target one architecture. CI passes that architecture to
+CMake through `CMAKE_OSX_ARCHITECTURES`, ensuring an arm64 build selects the
+SDK's `lib/arm64` libraries even when CMake reports an x86_64 host processor.
+
 The SDK must match the target OS, architecture, and C runtime. Windows builds use Filament's `/MD`
 libraries. Release wheels are repaired by cibuildwheel (`auditwheel`, `delocate`, or `delvewheel`)
 and then smoke-tested in a clean environment. The CI smoke test imports the native extension and

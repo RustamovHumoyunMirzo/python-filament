@@ -1,5 +1,7 @@
 # python-filament
 
+[![CI](https://github.com/RustamovHumoyunMirzo/python-filament/actions/workflows/ci.yml/badge.svg)](https://github.com/RustamovHumoyunMirzo/python-filament/actions/workflows/ci.yml)
+
 Pythonic, lifetime-safe bindings for [Google Filament](https://github.com/google/filament),
 a physically based real-time renderer for Windows, Linux, and macOS.
 

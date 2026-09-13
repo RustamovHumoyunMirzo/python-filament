@@ -13,7 +13,9 @@ def test_workflow_uses_supported_runners_and_node24_actions():
     assert "actions/upload-artifact@v6" in workflow
     assert "actions/download-artifact@v7" in workflow
     assert "softprops/action-gh-release@v3" in workflow
-    assert "manylinux-install-clang -l" in workflow
+    assert "manylinux-install-clang" not in workflow
+    assert "dnf install -y clang libcxx-devel libcxx-static libcxxabi-static" in workflow
+    assert "CMAKE_ARGS=-DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}" in workflow
     assert "e=filament.Engine()" not in workflow
 
 
@@ -25,5 +27,8 @@ def test_cibuildwheel_uses_portable_sdk_archive_path():
     assert 'BASE_DIR "${CMAKE_SOURCE_DIR}"' in cmake
     assert 'if(NOT EXISTS "${FILAMENT_ARCHIVE}")' in cmake
     assert "if: matrix.sdk != ''" in workflow
+    assert '"${_filament_extract_dir}/filament/include/filament/Engine.h"' in cmake
+    assert "if(APPLE AND CMAKE_OSX_ARCHITECTURES)" in cmake
+    assert 'if(_filament_arch MATCHES "^(AMD64|amd64|x86_64)$")' in cmake
     assert '"${FILAMENT_ROOT}/lib/universal"' in cmake
     assert '"${FILAMENT_ROOT}/lib/aarch64"' in cmake

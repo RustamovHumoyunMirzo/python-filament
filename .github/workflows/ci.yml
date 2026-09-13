@@ -81,7 +81,8 @@ jobs:
           CIBW_BUILD_FRONTEND: build
           CIBW_ENVIRONMENT: FILAMENT_ARCHIVE=filament-sdk.tgz
           CIBW_ENVIRONMENT_LINUX: FILAMENT_ARCHIVE=filament-sdk.tgz CC=clang CXX=clang++ CXXFLAGS=-stdlib=libc++
-          CIBW_BEFORE_ALL_LINUX: manylinux-install-clang -l
+          CIBW_ENVIRONMENT_MACOS: FILAMENT_ARCHIVE=filament-sdk.tgz CMAKE_ARGS=-DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
+          CIBW_BEFORE_ALL_LINUX: dnf install -y clang libcxx-devel libcxx-static libcxxabi-static
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           CIBW_TEST_COMMAND: python -c "import filament; from filament import _native; assert _native.BINDING_VERSION == filament.__version__; print(_native.FILAMENT_VERSION)"
