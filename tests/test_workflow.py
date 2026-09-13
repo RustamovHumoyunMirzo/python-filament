@@ -15,8 +15,9 @@ def test_workflow_uses_supported_runners_and_node24_actions():
     assert "softprops/action-gh-release@v3" in workflow
     assert "manylinux-install-clang" not in workflow
     assert "dnf install -y clang libcxx-devel libcxx-static libcxxabi-static" in workflow
-    assert "CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64" in workflow
-    assert "CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64" in workflow
+    image_tag = "2025.04.19-1"
+    assert f"quay.io/pypa/manylinux_2_34_x86_64:{image_tag}" in workflow
+    assert f"quay.io/pypa/manylinux_2_34_aarch64:{image_tag}" in workflow
     assert "CMAKE_ARGS=-DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}" in workflow
     assert "e=filament.Engine()" not in workflow
 

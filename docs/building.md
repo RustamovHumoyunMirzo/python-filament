@@ -23,7 +23,9 @@ release publishes macOS arm64 wheels rather than non-functional Intel wheels.
 Linux wheels use the AlmaLinux 9-based `manylinux_2_34` image. Its repositories
 provide the Clang, libc++, and libc++abi packages required to link against the
 official Filament Linux SDK; these packages are absent from the enabled
-AlmaLinux 8 repositories in `manylinux_2_28`.
+AlmaLinux 8 repositories in `manylinux_2_28`. CI pins the PyPA image to
+`2025.04.19-1`, a matching image generation that includes CPython 3.7 and 3.8
+as required by this package's support matrix.
 
 The SDK must match the target OS, architecture, and C runtime. Windows builds use Filament's `/MD`
 libraries. Release wheels are repaired by cibuildwheel (`auditwheel`, `delocate`, or `delvewheel`)
