@@ -8,17 +8,27 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "python-filament"
-version = "0.1.0"
+version = "1.0.0"
 description = "Pythonic bindings for Google's Filament real-time renderer"
 readme = "README.md"
 requires-python = ">=3.7"
 license = { text = "Apache-2.0" }
 authors = [{ name = "RustamovHumoyunMirzo" }]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 5 - Production/Stable",
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
   "Topic :: Multimedia :: Graphics :: 3D Rendering",
 ]
 dependencies = ["numpy>=1.19"]
@@ -26,16 +36,23 @@ dependencies = ["numpy>=1.19"]
 [project.optional-dependencies]
 qt = ["PySide6>=6.2; python_version >= '3.8'"]
 image = ["Pillow>=8"]
-dev = ["pytest>=7; pytest-cov; ruff>=0.3"]
+dev = [
+  "pytest>=7",
+  "pytest-cov",
+  "ruff>=0.3; python_version >= '3.8'",
+]
 
 [project.urls]
 Homepage = "https://github.com/RustamovHumoyunMirzo/python-filament"
+Documentation = "https://github.com/RustamovHumoyunMirzo/python-filament/blob/main/docs/api.md"
 Issues = "https://github.com/RustamovHumoyunMirzo/python-filament/issues"
+Changelog = "https://github.com/RustamovHumoyunMirzo/python-filament/blob/main/CHANGELOG.md"
 
 [tool.scikit-build]
 cmake.version = ">=3.20"
 wheel.packages = ["src/filament"]
-sdist.include = ["cpp", "src", "tests", "docs", "CMakeLists.txt", "LICENSE"]
+sdist.include = ["cpp", "src", "tests", "docs", "CMakeLists.txt", "LICENSE", "CHANGELOG.md"]
+sdist.exclude = ["**/__pycache__/**", "**/*.py[cod]", "build/**", "dist/**"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

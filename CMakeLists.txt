@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(python_filament LANGUAGES CXX)
+project(python_filament VERSION 1.0.0 LANGUAGES CXX)
 
 find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 find_package(pybind11 CONFIG REQUIRED)
@@ -39,6 +39,7 @@ endif()
 
 pybind11_add_module(_native MODULE cpp/bindings.cpp)
 target_compile_features(_native PRIVATE cxx_std_20)
+target_compile_definitions(_native PRIVATE PYTHON_FILAMENT_VERSION="${PROJECT_VERSION}")
 target_include_directories(_native PRIVATE "${FILAMENT_ROOT}/include")
 target_link_directories(_native PRIVATE "${_filament_libdir}")
 target_link_libraries(_native PRIVATE filament backend bluegl bluevk filabridge filaflat utils smol-v zstd)

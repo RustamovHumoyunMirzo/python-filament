@@ -3,8 +3,9 @@
 Pythonic, lifetime-safe bindings for [Google Filament](https://github.com/google/filament),
 a physically based real-time renderer for Windows, Linux, and macOS.
 
-> **Status:** early alpha. The ownership model and high-level API are usable; native coverage is
-> being expanded from the engine bridge to Filament's resource, glTF, and rendering APIs.
+**1.0 stable release.** Engine creation, renderer frames, scenes, views, cameras, viewports, and
+window/headless swap chains execute through the native Filament runtime. Higher-level Python
+objects provide validated ownership, scene-graph, resource-caching, NumPy, and async interfaces.
 
 ## Install
 
@@ -28,6 +29,9 @@ so the `qt` extra requires Python 3.8 or newer.
 
 ## Five-minute example
 
+This submits an empty scene through the native Filament renderer. Supply a platform window handle
+instead of the headless dimensions when presenting to a desktop window.
+
 ```python
 import filament as fl
 
@@ -43,12 +47,18 @@ with fl.Engine(backend=fl.Backend.AUTO) as engine:
     view.scene = scene
     view.viewport = fl.Viewport(0, 0, 1280, 720)
 
-    model = engine.load_model("DamagedHelmet.glb")
-    scene.add(model)
-
-    swap_chain = engine.create_swap_chain(native_handle=my_native_window_handle)
+    swap_chain = engine.create_swap_chain(width=1280, height=720, headless=True)
     renderer.render_frame(swap_chain, view)
 ```
+
+The exact native/Python support boundary is part of the API contract. In 1.0, the engine, renderer,
+scene, view, camera, swap chains, and frame submission are native. Models, materials, geometry,
+lights, and render-target pixels are validated Python-side descriptors and are not uploaded to the
+GPU yet. See the [complete API reference](docs/api.md#support-boundary) before building rendering
+features on a high-level object.
+
+The distribution includes `py.typed` and complete `.pyi` signatures, so editors, type checkers,
+and coding agents can inspect the public contract without importing the native extension.
 
 Resources retain their engine and are closed automatically. `close()` is deterministic and
 idempotent; using a resource after either it or its engine is closed raises
@@ -77,10 +87,10 @@ viewer.show()
 app.exec()
 ```
 
-See [the API guide](docs/api.md), [building wheels](docs/building.md), and the
-[architecture notes](docs/architecture.md).
+See the [complete API reference](docs/api.md), [building wheels](docs/building.md), and the
+[architecture notes](docs/architecture.md). See [the changelog](CHANGELOG.md) for compatibility
+and release details.
 
 ## License
 
 Apache License 2.0. Binary wheels include Filament's license and notices.
-

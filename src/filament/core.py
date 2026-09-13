@@ -36,11 +36,13 @@ class _DebugOptions:
 class Resource:
     """Lifetime-safe base for every object owned by an :class:`Engine`."""
 
-    def __init__(self, engine):
+    def __init__(self, engine, native_kind=None, native_handle=None):
         if engine is None or not engine.alive:
             raise ResourceDestroyedError("Engine has already been destroyed")
         self._engine = engine
         self._alive = True
+        self._native_kind = native_kind
+        self._native_handle = native_handle
         engine._register(self)
 
     @property
@@ -57,6 +59,10 @@ class Resource:
 
     def close(self):
         if self._alive:
+            self._engine._prepare_close(self)
+            if self._native_handle is not None and self._engine._native is not None:
+                self._engine._native.destroy(self._native_handle, self._native_kind)
+                self._native_handle = None
             self._alive = False
             engine = self._engine
             if engine is not None:
@@ -157,7 +163,8 @@ class Entity(Resource, Node):
 
 class Scene(Resource):
     def __init__(self, engine):
-        super().__init__(engine)
+        native_handle = engine._native.create_scene() if engine._native is not None else None
+        super().__init__(engine, "scene", native_handle)
         self._entities = []
         self.environment = None
         self.skybox = None
@@ -170,8 +177,10 @@ class Scene(Resource):
 
     def add(self, entity):
         self._check_alive()
-        if isinstance(entity, Resource) and entity.engine is not self.engine:
-            raise ValueError("resources from different engines cannot share a scene")
+        if isinstance(entity, Resource):
+            entity._check_alive()
+            if entity.engine is not self.engine:
+                raise ValueError("resources from different engines cannot share a scene")
         if entity not in self._entities:
             self._entities.append(entity)
         return entity
@@ -184,7 +193,11 @@ class Scene(Resource):
 
 class Camera(Entity):
     def __init__(self, engine, name=None):
-        super().__init__(engine, name or "Camera")
+        native_handle = engine._native.create_camera() if engine._native is not None else None
+        Resource.__init__(self, engine, "camera", native_handle)
+        Node.__init__(self, name or "Camera")
+        self.components = []
+        self.material = None
         self.eye = (0.0, 0.0, 1.0)
         self.target = (0.0, 0.0, 0.0)
         self.up = (0.0, 1.0, 0.0)
@@ -196,26 +209,85 @@ class Camera(Entity):
         self.eye = _vector(eye, 3, "eye")
         self.target = _vector(target, 3, "target")
         self.up = _vector(up, 3, "up")
+        if self._native_handle is not None:
+            self.engine._native.camera_look_at(self._native_handle, self.eye, self.target, self.up)
 
     def set_perspective(self, fov, aspect, near, far):
         self._check_alive()
         if aspect <= 0 or near <= 0 or far <= near:
             raise ValueError("perspective requires aspect > 0 and 0 < near < far")
         self.projection = (float(fov), float(aspect), float(near), float(far))
+        if self._native_handle is not None:
+            self.engine._native.camera_set_perspective(self._native_handle, *self.projection)
 
 
 class View(Resource):
     def __init__(self, engine):
-        super().__init__(engine)
-        self.scene = None
-        self.camera = None
-        self.viewport = None
+        native_handle = engine._native.create_view() if engine._native is not None else None
+        super().__init__(engine, "view", native_handle)
+        self._scene = None
+        self._camera = None
+        self._viewport = None
         self.clear_color = (0.0, 0.0, 0.0, 1.0)
         self.post_processing = True
         self.anti_aliasing = AntiAliasing.NONE
         self.sample_count = 1
         self.render_target = None
         self.debug = _DebugOptions()
+
+    @property
+    def scene(self):
+        return self._scene
+
+    @scene.setter
+    def scene(self, value):
+        self._check_alive()
+        if value is not None:
+            if not isinstance(value, Scene):
+                raise TypeError("view.scene must be a Scene or None")
+            value._check_alive()
+            if value.engine is not self.engine:
+                raise ValueError("view and scene must belong to the same engine")
+        self._scene = value
+        if self._native_handle is not None:
+            handle = None if value is None else value._native_handle
+            self.engine._native.view_set_scene(self._native_handle, handle or 0)
+
+    @property
+    def camera(self):
+        return self._camera
+
+    @camera.setter
+    def camera(self, value):
+        self._check_alive()
+        if value is None and self._native_handle is not None and self._camera is not None:
+            raise ValueError("a camera cannot be cleared from a native view; close the view instead")
+        if value is not None:
+            if not isinstance(value, Camera):
+                raise TypeError("view.camera must be a Camera or None")
+            value._check_alive()
+            if value.engine is not self.engine:
+                raise ValueError("view and camera must belong to the same engine")
+        self._camera = value
+        if self._native_handle is not None and value is not None:
+            self.engine._native.view_set_camera(self._native_handle, value._native_handle)
+
+    @property
+    def viewport(self):
+        return self._viewport
+
+    @viewport.setter
+    def viewport(self, value):
+        self._check_alive()
+        if value is not None:
+            from .types import Viewport
+            if not isinstance(value, Viewport):
+                raise TypeError("view.viewport must be a Viewport or None")
+        self._viewport = value
+        if self._native_handle is not None and value is not None:
+            self.engine._native.view_set_viewport(
+                self._native_handle, value.x, value.y, value.width, value.height
+            )
 
     def pick(self, x, y, callback=None):
         self._check_alive()
@@ -227,45 +299,65 @@ class View(Resource):
 
 class SwapChain(Resource):
     def __init__(self, engine, native_handle=None, width=None, height=None, headless=False):
-        super().__init__(engine)
         if headless and (not width or not height):
             raise ValueError("headless swap chains require width and height")
         if not headless and native_handle is None:
             raise ValueError("a native_handle is required for a window swap chain")
+        native = None
+        if engine._native is not None:
+            native = (engine._native.create_headless_swap_chain(width, height) if headless else
+                      engine._native.create_window_swap_chain(int(native_handle)))
+        super().__init__(engine, "swap_chain", native)
         self.native_handle = native_handle
         self.width, self.height, self.headless = width, height, bool(headless)
 
 
 class Renderer(Resource):
     def __init__(self, engine):
-        super().__init__(engine)
+        native_handle = engine._native.create_renderer() if engine._native is not None else None
+        super().__init__(engine, "renderer", native_handle)
         self._in_frame = False
+        self._active_swap_chain = None
         self._callbacks = []
         self._last_time = time.monotonic()
 
     def begin_frame(self, swap_chain):
         self._check_alive()
         swap_chain._check_alive()
+        if swap_chain.engine is not self.engine:
+            raise ValueError("renderer and swap chain must belong to the same engine")
         if self._in_frame:
             raise RuntimeError("begin_frame called while a frame is active")
         now = time.monotonic()
         dt, self._last_time = now - self._last_time, now
         for callback in tuple(self._callbacks):
             callback(dt)
-        self._in_frame = True
-        return True
+        accepted = (self.engine._native.begin_frame(self._native_handle, swap_chain._native_handle)
+                    if self._native_handle is not None else True)
+        self._in_frame = bool(accepted)
+        self._active_swap_chain = swap_chain if accepted else None
+        return self._in_frame
 
     def render(self, view):
         self._check_alive()
         view._check_alive()
+        if view.engine is not self.engine:
+            raise ValueError("renderer and view must belong to the same engine")
         if not self._in_frame:
             raise RuntimeError("render must be called between begin_frame and end_frame")
+        if self._native_handle is not None:
+            self.engine._native.render(self._native_handle, view._native_handle)
 
     def end_frame(self):
         self._check_alive()
         if not self._in_frame:
             raise RuntimeError("no frame is active")
-        self._in_frame = False
+        try:
+            if self._native_handle is not None:
+                self.engine._native.end_frame(self._native_handle)
+        finally:
+            self._in_frame = False
+            self._active_swap_chain = None
 
     def render_frame(self, swap_chain, view):
         if self.begin_frame(swap_chain):
@@ -331,6 +423,9 @@ class Material(Resource):
 
 class MaterialInstance(Resource):
     def __init__(self, engine, material):
+        if material.engine is not engine:
+            raise ValueError("material and instance must belong to the same engine")
+        material._check_alive()
         super().__init__(engine)
         self.material, self.parameters = material, {}
 
@@ -351,9 +446,10 @@ class Texture(Resource):
                  TextureFormat.RGBA16F: 4, TextureFormat.DEPTH24: 1}
 
     def __init__(self, engine, width, height, format=TextureFormat.RGBA8, levels=1, srgb=False):
-        super().__init__(engine)
         if width <= 0 or height <= 0 or levels <= 0:
             raise ValueError("texture dimensions and levels must be positive")
+        format = TextureFormat(format)
+        super().__init__(engine)
         self.width, self.height = int(width), int(height)
         self.format, self.levels, self.srgb = format, int(levels), bool(srgb)
         self.pixels = None
@@ -391,6 +487,8 @@ class _TextureBuilder(_Builder):
 
 class VertexBuffer(Resource):
     def __init__(self, engine, vertex_count, buffer_count=1, attributes=None):
+        if vertex_count <= 0 or buffer_count <= 0:
+            raise ValueError("vertex_count and buffer_count must be positive")
         super().__init__(engine)
         self.vertex_count, self.buffer_count = int(vertex_count), int(buffer_count)
         self.attributes = attributes or []
@@ -414,8 +512,10 @@ class _VertexBufferBuilder(_Builder):
 
 class IndexBuffer(Resource):
     def __init__(self, engine, index_count, type=IndexType.UINT):
+        if index_count <= 0:
+            raise ValueError("index_count must be positive")
         super().__init__(engine)
-        self.index_count, self.type = int(index_count), type
+        self.index_count, self.type = int(index_count), IndexType(type)
 
     @classmethod
     def builder(cls, engine): return _IndexBufferBuilder(engine)
@@ -429,19 +529,30 @@ class _IndexBufferBuilder(_Builder):
 
 class Mesh(Resource):
     def __init__(self, engine, vertices, indices, normals=None, uvs=None):
-        super().__init__(engine)
-        self.vertices = np.ascontiguousarray(vertices, dtype=np.float32)
-        self.indices = np.ascontiguousarray(indices)
-        if self.vertices.ndim != 2 or self.vertices.shape[1] != 3:
+        vertices = np.ascontiguousarray(vertices, dtype=np.float32)
+        indices = np.ascontiguousarray(indices)
+        if vertices.ndim != 2 or vertices.shape[1] != 3:
             raise ValueError("vertices must have shape (n, 3)")
-        if self.indices.ndim != 1:
+        if indices.ndim != 1:
             raise ValueError("indices must be one-dimensional")
-        self.normals = None if normals is None else np.ascontiguousarray(normals, dtype=np.float32)
-        self.uvs = None if uvs is None else np.ascontiguousarray(uvs, dtype=np.float32)
+        if indices.dtype.kind not in "iu":
+            raise TypeError("indices must use an integer dtype")
+        if indices.size and (indices.min() < 0 or indices.max() >= len(vertices)):
+            raise ValueError("indices contain a vertex outside the mesh")
+        normals = None if normals is None else np.ascontiguousarray(normals, dtype=np.float32)
+        uvs = None if uvs is None else np.ascontiguousarray(uvs, dtype=np.float32)
+        if normals is not None and normals.shape != vertices.shape:
+            raise ValueError("normals must have the same shape as vertices")
+        if uvs is not None and uvs.shape != (len(vertices), 2):
+            raise ValueError("uvs must have shape (n, 2)")
+        super().__init__(engine)
+        self.vertices, self.indices, self.normals, self.uvs = vertices, indices, normals, uvs
 
 
 class Renderable(Entity):
     def __init__(self, engine, mesh, material, name=None):
+        if mesh.engine is not engine or material.engine is not engine:
+            raise ValueError("mesh, material, and renderable must belong to the same engine")
         super().__init__(engine, name or "Renderable")
         self.mesh, self.material = mesh, material
 
@@ -480,6 +591,8 @@ class Environment(Resource):
 
 class RenderTarget(Resource):
     def __init__(self, engine, width, height, color_format=TextureFormat.RGBA8, depth=True):
+        if width <= 0 or height <= 0:
+            raise ValueError("render target dimensions must be positive")
         super().__init__(engine)
         self.width, self.height = int(width), int(height)
         self.color_format, self.depth = color_format, bool(depth)
@@ -511,6 +624,23 @@ class ResourceFuture:
         self.progress = 1.0
         return value
 
+    def cancel(self):
+        return self._future.cancel()
+
+    def cancelled(self):
+        return self._future.cancelled()
+
+    def exception(self, timeout=None):
+        return self._future.exception(timeout)
+
+    def add_done_callback(self, callback):
+        self._future.add_done_callback(lambda _: callback(self))
+        return self
+
+    def __await__(self):
+        import asyncio
+        return asyncio.wrap_future(self._future).__await__()
+
 
 class _ResourceCache:
     def __init__(self):
@@ -526,6 +656,7 @@ class Engine:
         # Resource.close() removes itself from this set deterministically.
         self._resources = set()
         self._lock = threading.RLock()
+        self._closing = False
         self.resources = _ResourceCache()
         self.debug = _DebugOptions()
         self._executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
@@ -576,6 +707,28 @@ class Engine:
     def _unregister(self, resource):
         with self._lock:
             self._resources.discard(resource)
+
+    def _prepare_close(self, resource):
+        """Detach native dependants before a handle can become invalid."""
+        if isinstance(resource, Scene):
+            for item in tuple(self._resources):
+                if isinstance(item, View) and item.alive and item.scene is resource:
+                    item.scene = None
+        elif isinstance(resource, Camera):
+            # Filament views require a non-null camera. Destroy the dependent view
+            # rather than leave it holding a dangling native pointer.
+            for item in tuple(self._resources):
+                if isinstance(item, View) and item.alive and item.camera is resource:
+                    item.close()
+        elif isinstance(resource, SwapChain):
+            active = [item for item in self._resources if isinstance(item, Renderer)
+                      and item.alive and item._active_swap_chain is resource]
+            if active and not self._closing:
+                raise RuntimeError("cannot close a swap chain while its frame is active")
+            for renderer in active:
+                renderer.end_frame()
+        elif isinstance(resource, Renderer) and resource._in_frame:
+            resource.end_frame()
 
     def _check_alive(self):
         if not self.alive:
@@ -640,7 +793,11 @@ class Engine:
         with self._lock:
             if not self._alive:
                 return
-            for resource in list(self._resources):
+            self._closing = True
+            priority = {"view": 0, "camera": 1, "scene": 2, "renderer": 3, "swap_chain": 4}
+            for resource in sorted(
+                self._resources, key=lambda item: priority.get(item._native_kind, 5)
+            ):
                 resource.close()
             # Mark dead before joining workers so a concurrent loader cannot register
             # another child while shutdown is in progress.
