@@ -89,7 +89,10 @@ if(WIN32)
   target_link_libraries(_native PRIVATE opengl32)
 endif()
 if(UNIX AND NOT APPLE)
-  target_link_libraries(_native PRIVATE dl pthread)
+  # Filament's official Linux SDK is built with libc++, while pybind11 can use
+  # the platform-default libstdc++. No STL-owned value crosses this binding's
+  # Filament API boundary, so both runtimes can safely coexist in the module.
+  target_link_libraries(_native PRIVATE c++ c++abi dl pthread)
 endif()
 if(APPLE)
   target_link_libraries(_native PRIVATE

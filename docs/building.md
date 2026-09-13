@@ -21,9 +21,10 @@ Filament 1.76.1's official macOS SDK contains arm64 libraries only, so the 1.0.0
 release publishes macOS arm64 wheels rather than non-functional Intel wheels.
 
 Linux wheels use the AlmaLinux 9-based `manylinux_2_34` image. Its repositories
-provide the Clang, libc++, and libc++abi packages required to link against the
-official Filament Linux SDK; these packages are absent from the enabled
-AlmaLinux 8 repositories in `manylinux_2_28`. CI pins the PyPA image to
+provide Clang, but not the libc++ runtime required by the official Filament
+Linux SDK. CI therefore downloads checksum-pinned conda-forge libc++ and
+libc++abi packages for x86_64 or aarch64. The resulting shared libraries are
+collected into each wheel by `auditwheel`. CI pins the PyPA image to
 `2025.04.19-1`, a matching image generation that includes CPython 3.7 and 3.8
 as required by this package's support matrix.
 
