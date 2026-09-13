@@ -15,6 +15,7 @@ def test_workflow_uses_supported_runners_and_node24_actions():
     assert "softprops/action-gh-release@v3" in workflow
     assert "manylinux-install-clang" not in workflow
     assert "CIBW_BEFORE_ALL_LINUX: sh ci/install_linux_libcxx.sh" in workflow
+    assert "CIBW_SKIP: '*-musllinux_*'" in workflow
     assert "dnf install" not in workflow
     assert "LDFLAGS=-L/opt/python-filament-libcxx/lib" in workflow
     assert "LD_LIBRARY_PATH=/opt/python-filament-libcxx/lib" in workflow

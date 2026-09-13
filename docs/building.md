@@ -28,6 +28,10 @@ are collected into each wheel by `auditwheel`. CI pins the PyPA image to
 `2025.04.19-1`, a matching image generation that includes CPython 3.7 and 3.8
 as required by this package's support matrix.
 
+The upstream desktop Linux SDK targets glibc. CI therefore builds manylinux
+wheels and explicitly skips musllinux; the SDK cannot be linked into a musl
+wheel.
+
 The upstream 1.76.1 Linux archive references glibc 2.38's
 `__isoc23_sscanf`. On older glibc, the extension supplies that ABI entry point
 by forwarding Filament's conventional scan formats to `__isoc99_vsscanf`.

@@ -75,6 +75,7 @@ jobs:
         env:
           CIBW_ARCHS: ${{ matrix.arch }}
           CIBW_BUILD: ${{ matrix.build }}
+          CIBW_SKIP: '*-musllinux_*'
           CIBW_BUILD_FRONTEND: build
           CIBW_ENVIRONMENT: FILAMENT_ARCHIVE=filament-sdk.tgz
           CIBW_ENVIRONMENT_LINUX: FILAMENT_ARCHIVE=filament-sdk.tgz LDFLAGS=-L/opt/python-filament-libcxx/lib LD_LIBRARY_PATH=/opt/python-filament-libcxx/lib
