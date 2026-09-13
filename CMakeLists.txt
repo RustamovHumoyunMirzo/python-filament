@@ -73,7 +73,7 @@ find_library(_filament_core_library NAMES filament
              PATHS ${_filament_lib_candidates} NO_DEFAULT_PATH)
 if(NOT _filament_core_library)
   message(FATAL_ERROR
-    "Could not find the Filament runtime library for ${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR} "
+    "Could not find the Filament runtime library for ${CMAKE_SYSTEM_NAME}/${_filament_arch} "
     "under ${FILAMENT_ROOT}/lib")
 endif()
 get_filename_component(_filament_libdir "${_filament_core_library}" DIRECTORY)

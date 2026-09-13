@@ -4,7 +4,7 @@ from pathlib import Path
 def test_workflow_uses_supported_runners_and_node24_actions():
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "macos-13" not in workflow
-    assert "macos-15-intel" in workflow
+    assert "macos-15-intel" not in workflow
     assert "runner: macos-15," in workflow
     assert "runner: ubuntu-22.04" in workflow
     assert "actions/setup-python@v5" not in workflow
@@ -15,6 +15,8 @@ def test_workflow_uses_supported_runners_and_node24_actions():
     assert "softprops/action-gh-release@v3" in workflow
     assert "manylinux-install-clang" not in workflow
     assert "dnf install -y clang libcxx-devel libcxx-static libcxxabi-static" in workflow
+    assert "CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_34" in workflow
+    assert "CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_34" in workflow
     assert "CMAKE_ARGS=-DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}" in workflow
     assert "e=filament.Engine()" not in workflow
 

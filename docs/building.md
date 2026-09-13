@@ -17,6 +17,13 @@ directory used by the macOS SDK.
 Each macOS wheel must target one architecture. CI passes that architecture to
 CMake through `CMAKE_OSX_ARCHITECTURES`, ensuring an arm64 build selects the
 SDK's `lib/arm64` libraries even when CMake reports an x86_64 host processor.
+Filament 1.76.1's official macOS SDK contains arm64 libraries only, so the 1.0.0
+release publishes macOS arm64 wheels rather than non-functional Intel wheels.
+
+Linux wheels use the AlmaLinux 9-based `manylinux_2_34` image. Its repositories
+provide the Clang, libc++, and libc++abi packages required to link against the
+official Filament Linux SDK; these packages are absent from the enabled
+AlmaLinux 8 repositories in `manylinux_2_28`.
 
 The SDK must match the target OS, architecture, and C runtime. Windows builds use Filament's `/MD`
 libraries. Release wheels are repaired by cibuildwheel (`auditwheel`, `delocate`, or `delvewheel`)

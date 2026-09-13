@@ -44,9 +44,6 @@ jobs:
           - {os: windows, arch: AMD64, runner: windows-2022,
              build: 'cp37-* cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*',
              sdk: 'https://github.com/google/filament/releases/download/v1.76.1/filament-v1.76.1-windows.tgz'}
-          - {os: macos, arch: x86_64, runner: macos-15-intel,
-             build: 'cp37-* cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*',
-             sdk: 'https://github.com/google/filament/releases/download/v1.76.1/filament-v1.76.1-mac.tgz'}
           - {os: macos, arch: arm64, runner: macos-15,
              build: 'cp38-* cp39-* cp310-* cp311-* cp312-* cp313-*',
              sdk: 'https://github.com/google/filament/releases/download/v1.76.1/filament-v1.76.1-mac.tgz'}
@@ -83,8 +80,8 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: FILAMENT_ARCHIVE=filament-sdk.tgz CC=clang CXX=clang++ CXXFLAGS=-stdlib=libc++
           CIBW_ENVIRONMENT_MACOS: FILAMENT_ARCHIVE=filament-sdk.tgz CMAKE_ARGS=-DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
           CIBW_BEFORE_ALL_LINUX: dnf install -y clang libcxx-devel libcxx-static libcxxabi-static
-          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
-          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_34
+          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_34
           CIBW_TEST_COMMAND: python -c "import filament; from filament import _native; assert _native.BINDING_VERSION == filament.__version__; print(_native.FILAMENT_VERSION)"
           CIBW_TEST_REQUIRES: numpy
         run: python -m cibuildwheel --output-dir wheelhouse
