@@ -77,9 +77,10 @@ jobs:
           CIBW_BUILD: ${{ matrix.build }}
           CIBW_BUILD_FRONTEND: build
           CIBW_ENVIRONMENT: FILAMENT_ARCHIVE=filament-sdk.tgz
-          CIBW_ENVIRONMENT_LINUX: FILAMENT_ARCHIVE=filament-sdk.tgz CC=clang CXX=clang++ LDFLAGS=-L/opt/python-filament-libcxx/lib
+          CIBW_ENVIRONMENT_LINUX: FILAMENT_ARCHIVE=filament-sdk.tgz CC=clang CXX=clang++ LDFLAGS=-L/opt/python-filament-libcxx/lib LD_LIBRARY_PATH=/opt/python-filament-libcxx/lib
           CIBW_ENVIRONMENT_MACOS: FILAMENT_ARCHIVE=filament-sdk.tgz CMAKE_ARGS=-DCMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
           CIBW_BEFORE_ALL_LINUX: sh ci/install_linux_libcxx.sh
+          CIBW_REPAIR_WHEEL_COMMAND_LINUX: LD_LIBRARY_PATH=/opt/python-filament-libcxx/lib auditwheel repair -w {dest_dir} {wheel}
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64:2025.04.19-1
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_34_aarch64:2025.04.19-1
           CIBW_TEST_COMMAND: python -c "import filament; from filament import _native; assert _native.BINDING_VERSION == filament.__version__; print(_native.FILAMENT_VERSION)"
