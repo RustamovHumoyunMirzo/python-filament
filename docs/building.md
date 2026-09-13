@@ -3,19 +3,24 @@
 Source builds consume an extracted prebuilt Filament SDK through `FILAMENT_ROOT`, or an SDK archive
 through `FILAMENT_ARCHIVE`. They never fetch or compile Filament implicitly.
 
+`FILAMENT_ARCHIVE` may be absolute or relative. Relative paths are resolved from the project source
+directory, which makes the same value portable across Windows, Linux containers, and macOS:
+
 ```bash
-FILAMENT_ARCHIVE=/path/to/filament-v1.76.1-linux.tgz pip wheel . -w dist
+FILAMENT_ARCHIVE=filament-sdk.tgz pip wheel . -w dist
 ```
 
 The SDK must match the target OS, architecture, and C runtime. Windows builds use Filament's `/MD`
 libraries. Release wheels are repaired by cibuildwheel (`auditwheel`, `delocate`, or `delvewheel`)
-and then smoke-tested in a clean environment.
+and then smoke-tested in a clean environment. The CI smoke test imports the native extension and
+checks its binding version; it deliberately does not initialize a graphics backend because hosted
+runners do not guarantee a GPU or display server.
 
 The GitHub Actions workflow runs tests for pushes and pull requests. Tags matching `v*` build the
 same artifacts, create a GitHub release, and publish to PyPI using trusted publishing. The PyPI
 environment should be configured with an OIDC trusted publisher; no long-lived API token is needed.
 
-Upstream release archives do not cover every CPU/OS pair. For those targets, set the corresponding
-`FILAMENT_SDK_URL` matrix entry to a separately produced, immutable prebuilt SDK artifact. End users
-still only install wheels and never build Filament.
-
+Upstream release archives do not include Windows ARM64. That matrix entry runs only when the
+`FILAMENT_WINDOWS_ARM64_SDK_URL` repository variable points to a separately produced, immutable
+prebuilt SDK artifact. CPython ARM64 wheels begin at 3.11. End users still only install wheels and
+never build Filament.

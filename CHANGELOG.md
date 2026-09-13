@@ -13,6 +13,8 @@
 - Documented the stable API, architecture, binary build policy, and PyPI release procedure.
 - Added a complete argument/type/return/exception reference, explicit native-support matrix,
   machine-readable type stubs, and documentation coverage tests.
+- Made wheel CI portable across Windows, Linux, and current macOS runners; retained Python 3.7
+  testing on Ubuntu 22.04 and migrated workflow actions to Node 24 runtimes.
 
 ## 0.1.0 - 2026-09-12
 

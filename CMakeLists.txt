@@ -17,6 +17,13 @@ if(NOT FILAMENT_ROOT)
       "Set FILAMENT_ROOT to an extracted Filament SDK or FILAMENT_ARCHIVE to a prebuilt SDK archive. "
       "python-filament never builds Filament from source.")
   endif()
+  if(NOT IS_ABSOLUTE "${FILAMENT_ARCHIVE}")
+    get_filename_component(FILAMENT_ARCHIVE "${FILAMENT_ARCHIVE}" ABSOLUTE
+                           BASE_DIR "${CMAKE_SOURCE_DIR}")
+  endif()
+  if(NOT EXISTS "${FILAMENT_ARCHIVE}")
+    message(FATAL_ERROR "Filament SDK archive does not exist: ${FILAMENT_ARCHIVE}")
+  endif()
   set(FILAMENT_ROOT "${CMAKE_BINARY_DIR}/filament-sdk")
   if(NOT EXISTS "${FILAMENT_ROOT}/include/filament/Engine.h")
     file(MAKE_DIRECTORY "${FILAMENT_ROOT}")
@@ -24,18 +31,35 @@ if(NOT FILAMENT_ROOT)
   endif()
 endif()
 
-if(WIN32)
+set(_filament_arch "${CMAKE_SYSTEM_PROCESSOR}")
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(AMD64|amd64|x86_64)$")
   set(_filament_arch "x86_64")
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64)$")
-    set(_filament_arch "arm64")
-  endif()
-  set(_filament_libdir "${FILAMENT_ROOT}/lib/${_filament_arch}/md")
-else()
-  set(_filament_libdir "${FILAMENT_ROOT}/lib/${CMAKE_SYSTEM_PROCESSOR}")
-  if(NOT EXISTS "${_filament_libdir}")
-    set(_filament_libdir "${FILAMENT_ROOT}/lib")
-  endif()
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(ARM64|arm64|aarch64)$")
+  set(_filament_arch "arm64")
 endif()
+
+set(_filament_lib_candidates
+  "${FILAMENT_ROOT}/lib/${_filament_arch}"
+  "${FILAMENT_ROOT}/lib/${CMAKE_SYSTEM_PROCESSOR}"
+  "${FILAMENT_ROOT}/lib/universal"
+  "${FILAMENT_ROOT}/lib")
+if(WIN32)
+  list(PREPEND _filament_lib_candidates "${FILAMENT_ROOT}/lib/${_filament_arch}/md")
+endif()
+if(_filament_arch STREQUAL "arm64")
+  list(APPEND _filament_lib_candidates "${FILAMENT_ROOT}/lib/aarch64")
+endif()
+
+unset(_filament_core_library CACHE)
+find_library(_filament_core_library NAMES filament
+             PATHS ${_filament_lib_candidates} NO_DEFAULT_PATH)
+if(NOT _filament_core_library)
+  message(FATAL_ERROR
+    "Could not find the Filament runtime library for ${CMAKE_SYSTEM_NAME}/${CMAKE_SYSTEM_PROCESSOR} "
+    "under ${FILAMENT_ROOT}/lib")
+endif()
+get_filename_component(_filament_libdir "${_filament_core_library}" DIRECTORY)
+message(STATUS "Using Filament libraries from: ${_filament_libdir}")
 
 pybind11_add_module(_native MODULE cpp/bindings.cpp)
 target_compile_features(_native PRIVATE cxx_std_20)
